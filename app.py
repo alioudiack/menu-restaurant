@@ -446,7 +446,27 @@ def render_menu_page() -> None:
     categories = ["Tout"] + sorted({dish.category for dish in service_dishes})
     selected_category = st.sidebar.radio("Catégorie", categories, index=0)
 
+    # -- REMPLACEZ CETTE ZONE DANS VOTRE CODE --
     highest_price = max((dish.price_value for dish in service_dishes), default=0)
+    
+    # Sécurité : Si le prix le plus haut est égal à 0 ou négatif, on force une plage minimale valide
+    if highest_price <= 0:
+        max_price = st.sidebar.slider(
+            "Prix maximum",
+            min_value=0,
+            max_value=500,  # Évite la plage nulle (0-0)
+            value=0,
+            step=500,
+        )
+    else:
+        max_price = st.sidebar.slider(
+            "Prix maximum",
+            min_value=0,
+            max_value=highest_price,
+            value=highest_price,
+            step=500,
+        )
+    # -- FIN DE LA ZONE DE REMPLACEMENT --
     max_price = st.sidebar.slider(
         "Prix maximum",
         min_value=0,
