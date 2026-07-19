@@ -437,24 +437,33 @@ def render_menu_page() -> None:
     else:
         selected_service = st.sidebar.radio("Service", ["Tout", *SERVICE_OPTIONS], index=0)
 
+    # 1. Filtrer d'abord les plats selon le service choisi
     service_dishes = [
         dish
         for dish in menu
         if service_matches_filter(dish.service, selected_service)
     ]
 
+    # 2. Récupérer et sélectionner la catégorie correspondante
     categories = ["Tout"] + sorted({dish.category for dish in service_dishes})
     selected_category = st.sidebar.radio("Catégorie", categories, index=0)
 
-    # -- REMPLACEZ CETTE ZONE DANS VOTRE CODE --
-    highest_price = max((dish.price_value for dish in service_dishes), default=0)
-    
-    # Sécurité : Si le prix le plus haut est égal à 0 ou négatif, on force une plage minimale valide
+    # 3. Filtrer par catégorie AVANT d'analyser le prix max
+    category_dishes = [
+        dish 
+        for dish in service_dishes 
+        if selected_category == "Tout" or dish.category == selected_category
+    ]
+
+    # 4. Calculer le prix maximum disponible dans cette sélection de plats
+    highest_price = max((dish.price_value for dish in category_dishes), default=0)
+
+    # 5. Rendre le slider de prix de façon ultra sécurisée
     if highest_price <= 0:
         max_price = st.sidebar.slider(
             "Prix maximum",
             min_value=0,
-            max_value=500,  # Évite la plage nulle (0-0)
+            max_value=500,  # Empêche la plage nulle (0-0)
             value=0,
             step=500,
         )
@@ -466,22 +475,15 @@ def render_menu_page() -> None:
             value=highest_price,
             step=500,
         )
-    # -- FIN DE LA ZONE DE REMPLACEMENT --
-    max_price = st.sidebar.slider(
-        "Prix maximum",
-        min_value=0,
-        max_value=highest_price,
-        value=highest_price,
-        step=500,
-    )
 
+    # 6. Recherche par mots-clés
     search = st.sidebar.text_input("Rechercher un plat", placeholder="Ex: poulet, gambas...")
 
+    # 7. Appliquer le filtre final de prix et de recherche textuelle
     visible_dishes = [
         dish
-        for dish in service_dishes
-        if (selected_category == "Tout" or dish.category == selected_category)
-        and dish.price_value <= max_price
+        for dish in category_dishes
+        if dish.price_value <= max_price
         and (
             not search
             or search.lower() in dish.name.lower()
@@ -658,7 +660,7 @@ def render_edit_admin(dishes: list[Dish]) -> None:
         except RuntimeError as error:
             st.error(str(error))
         else:
-            st.success("Plat modifié.")
+            st.success("Plat modified.")
             st.rerun()
 
 
